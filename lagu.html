@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Music</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+        :root { 
+            --glass-bg: rgba(18, 20, 25, 0.7); --glass-border: rgba(255, 255, 255, 0.1); 
+            --primary: #00f2fe; --primary-dark: #4facfe; --text-main: #ffffff; --text-muted: #94a3b8; 
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body { 
+            background: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat; 
+            background-color: #0f172a; background-blend-mode: luminosity; 
+            height: 100dvh; width: 100vw; overflow: hidden;
+            display: flex; justify-content: center; align-items: center; color: var(--text-main); 
+        }
+
+        .app-container { 
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            width: 100%; max-width: 450px; height: 100%; 
+            display: flex; flex-direction: column; position: relative; 
+            border: 1px solid var(--glass-border); overflow: hidden;
+        }
+        @media(min-width: 500px) { .app-container { height: 92vh; border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); } }
+        
+        header { padding: 20px 25px; display: flex; align-items: center; justify-content: center; background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .header-title { font-weight: 800; font-size: 22px; letter-spacing: 0.5px; background: linear-gradient(135deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .app-content { flex: 1; overflow-y: auto; padding: 0 15px 100px 15px; }
+
+        .bottom-nav { position: absolute; bottom: 15px; left: 15px; right: 15px; background: rgba(15, 20, 25, 0.85); display: flex; height: 70px; border-radius: 25px; border: 1px solid var(--glass-border); backdrop-filter: blur(20px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 5px; z-index: 50; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 22px; border-radius: 20px; transition: 0.3s ease; }
+        .nav-item.active { background: rgba(255,255,255,0.1); color: var(--primary); box-shadow: inset 0 2px 5px rgba(255,255,255,0.05); }
+        .nav-label { font-size: 10px; margin-top: 5px; font-weight: 700; }
+
+        /* PLAYER MUSIC STYLES */
+        .music-player { padding: 30px 15px 20px; text-align: center; }
+        .album-art { width: 220px; height: 220px; margin: 0 auto 25px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 2px 5px rgba(255,255,255,0.2); object-fit: cover; border: 2px solid rgba(255,255,255,0.1); }
+        .song-title { font-size: 22px; font-weight: 700; margin-bottom: 5px; color: #fff; }
+        .song-artist { color: var(--text-muted); font-size: 14px; margin-bottom: 25px; font-weight: 400; }
+        
+        .progress-container { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-muted); margin-bottom: 30px; font-weight: 600; }
+        .progress-bar { flex: 1; height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px; cursor: pointer; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary-dark), var(--primary)); width: 0%; border-radius: 3px; box-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
+        
+        .controls { display: flex; justify-content: center; align-items: center; gap: 30px; }
+        .btn-control { background: transparent; border: none; color: var(--text-muted); font-size: 28px; cursor: pointer; transition: 0.2s; }
+        .btn-control:hover { color: var(--white); transform: scale(1.1); }
+        
+        .btn-play { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #000; border: none; padding: 0; width: 65px; height: 65px; border-radius: 50%; font-size: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 10px 20px rgba(0, 242, 254, 0.3), inset 0 2px 4px rgba(255,255,255,0.5), inset 0 -3px 5px rgba(0,0,0,0.2); transition: 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .btn-play:active { transform: translateY(2px); box-shadow: 0 5px 10px rgba(0, 242, 254, 0.3), inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        .playlist-header { padding: 10px 10px; font-weight: 800; font-size: 14px; color: var(--primary); letter-spacing: 1px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 10px; }
+        .playlist-item { display: flex; align-items: center; gap: 15px; padding: 12px 15px; cursor: pointer; transition: 0.3s; border-radius: 16px; margin-bottom: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.02); }
+        .playlist-item:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+        .playlist-item img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .playlist-title { font-size: 15px; font-weight: 600; color: white; margin-bottom: 3px; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header><div class="header-title">Nexus Music</div></header>
+
+        <div class="app-content">
+            <div class="music-player">
+                <img id="player-cover" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300" alt="Cover">
+                <div class="song-title" id="player-title">Pilih Lagu</div>
+                <div class="song-artist" id="player-artist">Ketuk lagu di playlist</div>
+                
+                <div class="progress-container">
+                    <span id="curr-time">0:00</span>
+                    <div class="progress-bar" id="progress-container" onclick="seekSong(event)">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <span id="total-time">--:--</span>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn-control" onclick="prevSong()">⏮</button>
+                    <button class="btn-play" id="play-btn" onclick="togglePlay()">▶</button>
+                    <button class="btn-control" onclick="nextSong()">⏭</button>
+                </div>
+            </div>
+
+            <div class="playlist-header">PLAYLIST</div>
+            <div id="playlist-container"></div>
+            <audio id="audio-player"></audio>
+        </div>
+
+        <div class="bottom-nav">
+            <a href="index.html" class="nav-item">💬<span class="nav-label">Chat</span></a>
+            <a href="lagu.html" class="nav-item active">🎵<span class="nav-label">Music</span></a>
+            <a href="akun.html" class="nav-item">⚙️<span class="nav-label">Profile</span></a>
+        </div>
+    </div>
+
+    <script>
+        // PATH DIUBAH KE DALAM FOLDER /musik/
+        const songs = [
+            { title: "Sedia Aku Sebelum Hujan", artist: "Lokal", src: "./musik/Sedia Aku Sebelum Hujan_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300" },
+            { title: "The Fate of Ophelia", artist: "Anime", src: "./musik/The Fate of Ophelia_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300" },
+            { title: "Bahagia Lagi", artist: "Pop", src: "./musik/Bahagia Lagi_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1493225457124-a1a2a5fd37b0?w=300" },
+            { title: "Kota Ini Tak Sama Tanpamu", artist: "Acoustic", src: "./musik/kota ini tak sama tanpamu_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=300" },
+            { title: "Animals", artist: "Beat", src: "./musik/Animals_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=300" },
+            { title: "So Easy (To Fall In Love)", artist: "Romance", src: "./musik/So Easy (To Fall In Love)_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300" },
+            { title: "Back to Friends", artist: "Vibes", src: "./musik/back to friends_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=300" },
+            { title: "Kicau Mania", artist: "Manuk", src: "./musik/Kicau Mania_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1550853024-fae8cd4be47f?w=300" }
+        ];
+
+        let currentIndex = 0; const audio = document.getElementById('audio-player');
+        
+        function loadPlaylist() {
+            const container = document.getElementById('playlist-container');
+            songs.forEach((song, i) => {
+                container.innerHTML += `
+                    <div class="playlist-item" onclick="playSong(${i})">
+                        <img src="${song.cover}">
+                        <div class="playlist-info">
+                            <div class="playlist-title">${song.title}</div>
+                            <div style="font-size:13px; color:var(--text-muted); font-weight:400;">${song.artist}</div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function playSong(index) {
+            currentIndex = index; const song = songs[index];
+            audio.src = song.src;
+            document.getElementById('player-cover').src = song.cover;
+            document.getElementById('player-title').innerText = song.title;
+            document.getElementById('player-artist').innerText = song.artist;
+            audio.play().catch(e => alert("Gagal play: Pastikan folder /musik/ dan file MP3-nya ada!"));
+            document.getElementById('play-btn').innerText = "⏸";
+        }
+
+        function togglePlay() {
+            if(!audio.src) return playSong(0);
+            if(audio.paused) { audio.play(); document.getElementById('play-btn').innerText = "⏸"; } 
+            else { audio.pause(); document.getElementById('play-btn').innerText = "▶"; }
+        }
+
+        function nextSong() { playSong((currentIndex + 1) % songs.length); }
+        function prevSong() { playSong((currentIndex - 1 + songs.length) % songs.length); }
+
+        audio.addEventListener('timeupdate', () => {
+            if(audio.duration) {
+                document.getElementById('progress-fill').style.width = `${(audio.currentTime/audio.duration)*100}%`;
+                document.getElementById('curr-time').innerText = formatTime(audio.currentTime);
+                document.getElementById('total-time').innerText = formatTime(audio.duration);
+            }
+        });
+        audio.addEventListener('ended', nextSong);
+
+        function seekSong(e) { audio.currentTime = (e.offsetX / document.getElementById('progress-container').clientWidth) * audio.duration; }
+        function formatTime(sec) { let min = Math.floor(sec/60); let s = Math.floor(sec%60); return `${min}:${s<10?'0'+s:s}`; }
+
+        loadPlaylist();
+    </script>
+</body>
+</html>

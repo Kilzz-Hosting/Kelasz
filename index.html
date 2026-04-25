@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Premium UI</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+        :root { 
+            --glass-bg: rgba(18, 20, 25, 0.7); --glass-border: rgba(255, 255, 255, 0.1); 
+            --primary: #00f2fe; --primary-dark: #4facfe; --text-main: #ffffff; --text-muted: #94a3b8; 
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body { 
+            background: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat; 
+            background-color: #0f172a; background-blend-mode: luminosity; 
+            height: 100dvh; width: 100vw; overflow: hidden;
+            display: flex; justify-content: center; align-items: center; color: var(--text-main); 
+        }
+
+        .app-container { 
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            width: 100%; max-width: 450px; height: 100%; 
+            display: flex; flex-direction: column; position: relative; 
+            border: 1px solid var(--glass-border); overflow: hidden;
+        }
+        @media(min-width: 500px) { .app-container { height: 92vh; border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); } }
+        
+        header { padding: 20px 25px; display: flex; align-items: center; justify-content: center; background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent); border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 10; }
+        .header-title { font-weight: 800; font-size: 22px; letter-spacing: 0.5px; background: linear-gradient(135deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* PANELS SYSTEM (TABS) */
+        .panel { flex: 1; overflow-y: auto; padding: 15px 15px 100px 15px; display: none; flex-direction: column; }
+        .panel.active { display: flex; }
+
+        /* NAVIGASI BAWAH */
+        .bottom-nav { position: absolute; bottom: 15px; left: 15px; right: 15px; background: rgba(15, 20, 25, 0.85); display: flex; height: 70px; border-radius: 25px; border: 1px solid var(--glass-border); backdrop-filter: blur(20px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 5px; z-index: 50; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 22px; border-radius: 20px; transition: 0.3s ease; cursor: pointer; }
+        .nav-item.active { background: rgba(255,255,255,0.1); color: var(--primary); box-shadow: inset 0 2px 5px rgba(255,255,255,0.05); }
+        .nav-label { font-size: 10px; margin-top: 5px; font-weight: 700; }
+
+        /* --- STYLES CHAT LIST --- */
+        .contact-item { display: flex; align-items: center; padding: 15px; gap: 15px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s ease; }
+        .contact-item:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+        .avatar { width: 55px; height: 55px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); border-radius: 18px; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 800; background-size: cover; background-position: center; box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+        .chat-info { flex: 1; overflow: hidden; }
+        .chat-name { font-weight: 700; font-size: 16px; margin-bottom: 5px; color: #fff; }
+        .chat-preview { color: var(--text-muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+        .fab { position: fixed; bottom: 100px; right: 25px; width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: black; border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 30px; font-weight: bold; cursor: pointer; z-index: 40; box-shadow: 0 10px 20px rgba(0, 242, 254, 0.3); border: none; }
+
+        /* --- STYLES CHAT ROOM --- */
+        #chat-room { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(25px); display: flex; flex-direction: column; z-index: 100; transform: translateX(100%); transition: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        #chat-room.open { transform: translateX(0); }
+        #chat-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: url('https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=1920&auto=format&fit=crop') center/cover; background-blend-mode: overlay; background-color: rgba(0,0,0,0.85); }
+        .bubble { padding: 12px 18px; border-radius: 20px; max-width: 80%; font-size: 14.5px; font-weight: 500; word-wrap: break-word; line-height: 1.4; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .my-msg { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #000; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .their-msg { background: rgba(255,255,255,0.1); color: var(--white); border: 1px solid rgba(255,255,255,0.05); align-self: flex-start; border-bottom-left-radius: 4px; backdrop-filter: blur(10px); }
+        .chat-input-area { background: rgba(15, 20, 25, 0.9); padding: 15px 20px 25px 20px; display: flex; gap: 12px; align-items: center; border-top: 1px solid var(--glass-border); }
+        .chat-input-area input[type="text"] { flex: 1; background: rgba(0,0,0,0.5); color: white; padding: 14px 20px; border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; outline: none; }
+        .btn-send { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #000; border: none; padding: 12px; border-radius: 50%; width: 48px; height: 48px; font-size: 18px; cursor: pointer; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3); }
+
+        /* LOADING ANIMASI CHAT */
+        .loader-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; color: var(--primary); font-weight: 600; font-size: 14px;}
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- STYLES MUSIC PLAYER --- */
+        .music-player { padding: 10px 15px 20px; text-align: center; }
+        .album-art { width: 220px; height: 220px; margin: 0 auto 25px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); object-fit: cover; border: 2px solid rgba(255,255,255,0.1); }
+        .song-title { font-size: 22px; font-weight: 700; margin-bottom: 5px; color: #fff; }
+        .song-artist { color: var(--text-muted); font-size: 14px; margin-bottom: 25px; }
+        .progress-container { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-muted); margin-bottom: 30px; font-weight: 600; }
+        .progress-bar { flex: 1; height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary-dark), var(--primary)); width: 0%; border-radius: 3px; }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 30px; }
+        .btn-control { background: transparent; border: none; color: var(--text-muted); font-size: 28px; cursor: pointer; }
+        .btn-play { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #000; border: none; width: 65px; height: 65px; border-radius: 50%; font-size: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .playlist-header { font-weight: 800; font-size: 14px; color: var(--primary); letter-spacing: 1px; margin: 10px 0; }
+        .playlist-item { display: flex; align-items: center; gap: 15px; padding: 12px 15px; cursor: pointer; border-radius: 16px; margin-bottom: 8px; background: rgba(255,255,255,0.02); }
+
+        /* --- STYLES PROFILE --- */
+        .profile-header { text-align: center; padding: 20px 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .profile-avatar-container { position: relative; width: 120px; height: 120px; margin: 0 auto 20px; cursor: pointer; }
+        .profile-avatar { width: 100%; height: 100%; border-radius: 35px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); font-size: 45px; display: flex; align-items: center; justify-content: center; font-weight: 800; background-size: cover; background-position: center; }
+        .edit-badge { position: absolute; bottom: -5px; right: -5px; background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: black; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 18px; border: 2px solid #1a1a1a;}
+        .setting-item { padding: 18px 20px; display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); border-radius: 20px; margin-bottom: 12px; cursor: pointer; font-weight: 600; margin-top: 10px;}
+
+        /* MODAL */
+        .modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter: blur(10px); display:none; justify-content:center; align-items:center; z-index: 200; }
+        .modal { background: rgba(20, 25, 30, 0.95); padding: 30px; border-radius: 24px; width: 85%; border: 1px solid var(--glass-border); text-align: center; }
+        .modal input { width: 100%; padding: 15px; background: rgba(0,0,0,0.4); color: white; border-radius: 12px; margin: 20px 0; border: 1px solid rgba(255,255,255,0.1); outline: none; }
+        .btn-modal { padding: 14px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; width: 48%;}
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header><div class="header-title" id="main-header-title">Nexus Chat</div></header>
+
+        <div id="tab-chat" class="panel active">
+            <div id="contacts-list"></div>
+            <button class="fab" id="fab-btn" onclick="document.getElementById('add-modal').style.display='flex'">+</button>
+        </div>
+
+        <div id="tab-music" class="panel">
+            <div class="music-player">
+                <img id="player-cover" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300" alt="Cover">
+                <div class="song-title" id="player-title">Pilih Lagu</div>
+                <div class="song-artist" id="player-artist">Nexus Playlist</div>
+                
+                <div class="progress-container">
+                    <span id="curr-time">0:00</span>
+                    <div class="progress-bar" id="progress-container" onclick="seekSong(event)">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <span id="total-time">--:--</span>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn-control" onclick="prevSong()">⏮</button>
+                    <button class="btn-play" id="play-btn" onclick="togglePlay()">▶</button>
+                    <button class="btn-control" onclick="nextSong()">⏭</button>
+                </div>
+            </div>
+            <div class="playlist-header">PLAYLIST</div>
+            <div id="playlist-container"></div>
+        </div>
+
+        <div id="tab-profile" class="panel">
+            <div class="profile-header">
+                <input type="file" id="profile-upload" accept="image/*" style="display: none;" onchange="uploadProfilePic(event)">
+                <div class="profile-avatar-container" onclick="document.getElementById('profile-upload').click()">
+                    <div class="profile-avatar" id="profile-letter">U</div>
+                    <div class="edit-badge">📷</div>
+                </div>
+                <div class="profile-name" id="profile-name">Memuat...</div>
+                <div class="profile-username" id="profile-username">@loading</div>
+            </div>
+            
+            <div class="setting-item" onclick="resetPassword()">
+                <div style="font-size:22px;">🔐</div> Ganti Password
+            </div>
+            <div class="setting-item" onclick="logout()" style="color: #ff4757; background: rgba(255, 71, 87, 0.05);">
+                <div style="font-size:22px;">🚪</div> Keluar Akun
+            </div>
+        </div>
+
+        <audio id="audio-player"></audio>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('chat', 'Nexus Chat', this)">💬<span class="nav-label">Chat</span></div>
+            <div class="nav-item" onclick="switchTab('music', 'Nexus Music', this)">🎵<span class="nav-label">Music</span></div>
+            <div class="nav-item" onclick="switchTab('profile', 'Profile', this)">⚙️<span class="nav-label">Profile</span></div>
+        </div>
+
+        <div id="chat-room">
+            <header style="padding: 15px 20px; justify-content: flex-start;">
+                <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer; margin-right:10px;" onclick="closeChat()">🡠</button>
+                <div class="avatar" id="room-avatar" style="width: 40px; height: 40px; font-size: 16px; border-radius: 12px;"></div>
+                <div class="header-title" id="room-name" style="font-size: 18px; color: white; -webkit-text-fill-color: white;">...</div>
+            </header>
+            <div id="chat-content">
+                </div>
+            <div class="chat-input-area">
+                <input type="file" id="image-upload" accept="image/*" style="display: none;" onchange="uploadImgBB(event, 'chat')">
+                <button class="btn-control" onclick="document.getElementById('image-upload').click()" style="font-size: 24px;">📎</button>
+                <input type="text" id="msg-input" placeholder="Tulis pesan...">
+                <button class="btn-send" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="add-modal">
+            <div class="modal">
+                <h3 style="color: var(--primary);">Obrolan Baru</h3>
+                <input type="text" id="search-uname" placeholder="@username target">
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-modal" style="background:rgba(255,255,255,0.1); color:white;" onclick="document.getElementById('add-modal').style.display='none'">Batal</button>
+                    <button class="btn-modal" style="background:var(--primary); color:black;" onclick="startChat()">Mulai</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API KEYS & CONFIG
+        const IMGBB_API_KEY = "19ff490d9eba953f1485dc32685aed94"; 
+        const firebaseConfig = {
+            apiKey: "AIzaSyDg5QXVD0IBU7g85vxvse6LS_2mjt5wwxY",
+            authDomain: "chatt-apkproject.firebaseapp.com",
+            projectId: "chatt-apkproject",
+            storageBucket: "chatt-apkproject.firebasestorage.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(); const db = firebase.firestore();
+
+        let myData = null; let currentChatId = null; let chatListener = null;
+
+        // FUNGSI PINDAH TAB (TanPA REFRESH!)
+        function switchTab(tabId, title, element) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            element.classList.add('active');
+            document.getElementById('main-header-title').innerText = title;
+
+            // Sembunyikan FAB (+) kalau bukan di tab chat
+            document.getElementById('fab-btn').style.display = tabId === 'chat' ? 'flex' : 'none';
+        }
+
+        // AUTH & LOAD DATA
+        auth.onAuthStateChanged(async user => {
+            if (!user) return window.location.href = 'login.html';
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (doc.exists) { 
+                myData = doc.data(); 
+                loadInbox(); 
+                
+                // Set Profile UI
+                document.getElementById('profile-name').innerText = myData.username;
+                document.getElementById('profile-username').innerText = "@" + myData.username;
+                if(myData.photoURL) {
+                    document.getElementById('profile-letter').style.backgroundImage = `url('${myData.photoURL}')`;
+                    document.getElementById('profile-letter').innerText = "";
+                } else {
+                    document.getElementById('profile-letter').innerText = myData.username.charAt(0).toUpperCase();
+                }
+            }
+        });
+
+        // 1. SISTEM CHAT
+        function loadInbox() {
+            db.collection('chats').where('participants', 'array-contains', myData.uid)
+                .onSnapshot(snap => {
+                    const list = document.getElementById('contacts-list'); list.innerHTML = "";
+                    let chats = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    chats.sort((a,b) => (b.lastUpdated?.toMillis() || 0) - (a.lastUpdated?.toMillis() || 0));
+                    
+                    chats.forEach(async chat => {
+                        const fUid = chat.participants.find(u => u !== myData.uid);
+                        const fName = chat.usersData[fUid] || "User";
+                        const lastMsg = chat.lastMessage || "Mulai obrolan...";
+                        
+                        const fDoc = await db.collection('users').doc(fUid).get();
+                        const fPhoto = fDoc.exists && fDoc.data().photoURL ? `url('${fDoc.data().photoURL}')` : 'none';
+                        const fInitial = fDoc.exists && fDoc.data().photoURL ? '' : fName.charAt(0).toUpperCase();
+
+                        list.innerHTML += `
+                            <div class="contact-item" onclick="openChat('${chat.id}', '${fName}', '${fDoc.data()?.photoURL || ''}')">
+                                <div class="avatar" style="background-image: ${fPhoto}">${fInitial}</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">${fName}</div>
+                                    <div class="chat-preview">${lastMsg}</div>
+                                </div>
+                            </div>`;
+                    });
+                });
+        }
+
+        async function startChat() {
+            const target = document.getElementById('search-uname').value.trim().toLowerCase();
+            document.getElementById('add-modal').style.display = 'none';
+            if(!target || target === myData.username) return;
+
+            const snap = await db.collection('users').where('username', '==', target).get();
+            if(snap.empty) return alert("User tidak ditemukan");
+
+            const friend = snap.docs[0].data();
+            const chatId = myData.uid < friend.uid ? myData.uid+"_"+friend.uid : friend.uid+"_"+myData.uid;
+            
+            await db.collection('chats').doc(chatId).set({
+                participants: [myData.uid, friend.uid],
+                usersData: { [myData.uid]: myData.username, [friend.uid]: friend.username },
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            openChat(chatId, friend.username, friend.photoURL || '');
+        }
+
+        function openChat(id, name, photoURL) {
+            currentChatId = id;
+            document.getElementById('room-name').innerText = name;
+            const avatar = document.getElementById('room-avatar');
+            if(photoURL) { avatar.style.backgroundImage = `url('${photoURL}')`; avatar.innerText = ''; } 
+            else { avatar.style.backgroundImage = 'none'; avatar.innerText = name.charAt(0).toUpperCase(); }
+
+            document.getElementById('chat-room').classList.add('open');
+            
+            const box = document.getElementById('chat-content');
+            // ANIMASI LOADING MUNCUL
+            box.innerHTML = `<div class="loader-container"><div class="spinner"></div>Meretas Data...</div>`;
+
+            if(chatListener) chatListener();
+            chatListener = db.collection('chats').doc(id).collection('messages').orderBy("time", "asc")
+                .onSnapshot(snap => {
+                    box.innerHTML = ""; // Hapus loader saat data masuk
+                    if(snap.empty) {
+                        box.innerHTML = `<div style="text-align:center; color:gray; font-size:12px; margin-top:20px;">Belum ada pesan.</div>`;
+                    }
+                    snap.forEach(doc => {
+                        const d = doc.data(); const isMe = d.sender === myData.uid;
+                        const content = d.imageUrl ? `<img src="${d.imageUrl}" style="max-width:100%; border-radius:12px; margin-top:5px;">` : d.text;
+                        box.innerHTML += `<div class="bubble ${isMe ? 'my-msg' : 'their-msg'}">${content}</div>`;
+                    });
+                    box.scrollTop = box.scrollHeight;
+                });
+        }
+
+        function closeChat() {
+            document.getElementById('chat-room').classList.remove('open');
+            if(chatListener) { chatListener(); chatListener = null; } // Stop listening saat tutup chat
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('msg-input'); const val = input.value.trim();
+            if(!val || !currentChatId) return;
+            db.collection('chats').doc(currentChatId).collection('messages').add({ text: val, sender: myData.uid, time: firebase.firestore.FieldValue.serverTimestamp() });
+            db.collection('chats').doc(currentChatId).update({ lastMessage: val, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
+            input.value = "";
+        }
+
+        // UPLOAD GAMBAR (Fungsi gabungan buat Profile & Chat)
+        async function uploadImgBB(e, type) {
+            const file = e.target.files[0]; if(!file) return;
+            const formData = new FormData(); formData.append("image", file);
+            
+            if(type === 'profile') document.getElementById('profile-letter').innerText = "⏳";
+            else alert("Mengirim foto...");
+
+            try {
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+                const json = await res.json();
+                if(json.success) {
+                    if(type === 'profile') {
+                        await db.collection('users').doc(auth.currentUser.uid).update({ photoURL: json.data.url });
+                        document.getElementById('profile-letter').style.backgroundImage = `url('${json.data.url}')`;
+                        document.getElementById('profile-letter').innerText = "";
+                        alert("Foto profil diganti!");
+                    } else {
+                        db.collection('chats').doc(currentChatId).collection('messages').add({ imageUrl: json.data.url, sender: myData.uid, time: firebase.firestore.FieldValue.serverTimestamp() });
+                        db.collection('chats').doc(currentChatId).update({ lastMessage: "📷 Foto", lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
+                    }
+                }
+            } catch(err) { alert("Upload gagal!"); }
+            e.target.value = '';
+        }
+        function uploadProfilePic(e) { uploadImgBB(e, 'profile'); }
+
+        // 2. SISTEM MUSIK (Background)
+        const songs = [
+            { title: "Sedia Aku Sebelum Hujan", artist: "Lokal", src: "./musik/Sedia Aku Sebelum Hujan_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300" },
+            { title: "The Fate of Ophelia", artist: "Anime", src: "./musik/The Fate of Ophelia_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300" },
+            { title: "Bahagia Lagi", artist: "Pop", src: "./musik/Bahagia Lagi_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1493225457124-a1a2a5fd37b0?w=300" },
+            { title: "Kota Ini Tak Sama Tanpamu", artist: "Acoustic", src: "./musik/kota ini tak sama tanpamu_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=300" },
+            { title: "Animals", artist: "Beat", src: "./musik/Animals_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=300" },
+            { title: "So Easy", artist: "Romance", src: "./musik/So Easy (To Fall In Love)_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300" },
+            { title: "Back to Friends", artist: "Vibes", src: "./musik/back to friends_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=300" },
+            { title: "Kicau Mania", artist: "Manuk", src: "./musik/Kicau Mania_spotdown.org.mp3", cover: "https://images.unsplash.com/photo-1550853024-fae8cd4be47f?w=300" }
+        ];
+
+        let currentSong = 0; const audio = document.getElementById('audio-player');
+        
+        function initMusic() {
+            const container = document.getElementById('playlist-container');
+            songs.forEach((song, i) => {
+                container.innerHTML += `
+                    <div class="playlist-item" onclick="playSong(${i})">
+                        <img src="${song.cover}">
+                        <div><div class="playlist-title">${song.title}</div><div style="font-size:12px; color:gray;">${song.artist}</div></div>
+                    </div>`;
+            });
+        }
+
+        function playSong(index) {
+            currentSong = index; const s = songs[index];
+            audio.src = s.src;
+            document.getElementById('player-cover').src = s.cover;
+            document.getElementById('player-title').innerText = s.title;
+            document.getElementById('player-artist').innerText = s.artist;
+            audio.play().catch(e => alert("Gagal play: Pastikan folder /musik/ dan file MP3 ada!"));
+            document.getElementById('play-btn').innerText = "⏸";
+        }
+
+        function togglePlay() {
+            if(!audio.src) return playSong(0);
+            if(audio.paused) { audio.play(); document.getElementById('play-btn').innerText = "⏸"; } 
+            else { audio.pause(); document.getElementById('play-btn').innerText = "▶"; }
+        }
+
+        function nextSong() { playSong((currentSong + 1) % songs.length); }
+        function prevSong() { playSong((currentSong - 1 + songs.length) % songs.length); }
+
+        audio.addEventListener('timeupdate', () => {
+            if(audio.duration) {
+                document.getElementById('progress-fill').style.width = `${(audio.currentTime/audio.duration)*100}%`;
+                document.getElementById('curr-time').innerText = formatTime(audio.currentTime);
+                document.getElementById('total-time').innerText = formatTime(audio.duration);
+            }
+        });
+        audio.addEventListener('ended', nextSong);
+        function seekSong(e) { audio.currentTime = (e.offsetX / document.getElementById('progress-container').clientWidth) * audio.duration; }
+        function formatTime(sec) { let min = Math.floor(sec/60); let s = Math.floor(sec%60); return `${min}:${s<10?'0'+s:s}`; }
+
+        initMusic();
+
+        // UTILITIES
+        function resetPassword() {
+            if(!auth.currentUser.email) return alert("Akun Google");
+            auth.sendPasswordResetEmail(auth.currentUser.email).then(() => alert("Link reset password dikirim!")).catch(e => alert(e.message));
+        }
+        function logout() { auth.signOut().then(() => window.location.replace('login.html')); }
+    </script>
+</body>
+</html>

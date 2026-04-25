@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Profile</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+        :root { 
+            --glass-bg: rgba(18, 20, 25, 0.7); --glass-border: rgba(255, 255, 255, 0.1); 
+            --primary: #00f2fe; --primary-dark: #4facfe; --text-main: #ffffff; --text-muted: #94a3b8; 
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body { 
+            background: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat; 
+            background-color: #0f172a; background-blend-mode: luminosity; 
+            height: 100dvh; width: 100vw; overflow: hidden;
+            display: flex; justify-content: center; align-items: center; color: var(--text-main); 
+        }
+
+        .app-container { 
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            width: 100%; max-width: 450px; height: 100%; 
+            display: flex; flex-direction: column; position: relative; 
+            border: 1px solid var(--glass-border); overflow: hidden;
+        }
+        @media(min-width: 500px) { .app-container { height: 92vh; border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); } }
+        
+        header { padding: 20px 25px; display: flex; align-items: center; justify-content: center; background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .header-title { font-weight: 800; font-size: 22px; letter-spacing: 0.5px; background: linear-gradient(135deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .app-content { flex: 1; overflow-y: auto; padding-bottom: 100px; }
+
+        .bottom-nav { position: absolute; bottom: 15px; left: 15px; right: 15px; background: rgba(15, 20, 25, 0.85); display: flex; height: 70px; border-radius: 25px; border: 1px solid var(--glass-border); backdrop-filter: blur(20px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 5px; z-index: 50; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 22px; border-radius: 20px; transition: 0.3s ease; }
+        .nav-item.active { background: rgba(255,255,255,0.1); color: var(--primary); box-shadow: inset 0 2px 5px rgba(255,255,255,0.05); }
+        .nav-label { font-size: 10px; margin-top: 5px; font-weight: 700; }
+
+        /* PROFILE UI MODERN */
+        .profile-header { text-align: center; padding: 40px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .profile-avatar-container { position: relative; width: 120px; height: 120px; margin: 0 auto 20px; cursor: pointer; }
+        .profile-avatar { width: 100%; height: 100%; border-radius: 35px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); font-size: 45px; display: flex; align-items: center; justify-content: center; font-weight: 800; background-size: cover; background-position: center; transition: 0.3s; box-shadow: 0 15px 30px rgba(0,0,0,0.5); }
+        .profile-avatar-container:hover .profile-avatar { opacity: 0.7; transform: scale(0.95); }
+        
+        .edit-badge { position: absolute; bottom: -5px; right: -5px; background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: black; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 18px; box-shadow: 0 5px 10px rgba(0,0,0,0.5); border: 2px solid #1a1a1a;}
+        
+        .profile-name { font-size: 26px; font-weight: 800; letter-spacing: 1px; color: #fff; }
+        .profile-username { color: var(--primary); font-size: 15px; margin-top: 5px; font-weight: 600; }
+
+        .settings-list { padding: 20px 15px; }
+        .setting-item { padding: 18px 20px; display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; margin-bottom: 12px; cursor: pointer; transition: 0.3s; font-weight: 600; }
+        .setting-item:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .setting-item:active { transform: translateY(1px); }
+        .setting-icon { font-size: 22px; width: 35px; height: 35px; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; justify-content: center; align-items: center;}
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header><div class="header-title">Profile</div></header>
+
+        <div class="app-content">
+            <div class="profile-header">
+                <input type="file" id="profile-upload" accept="image/*" style="display: none;" onchange="uploadProfilePic(event)">
+                
+                <div class="profile-avatar-container" onclick="document.getElementById('profile-upload').click()">
+                    <div class="profile-avatar" id="profile-letter">U</div>
+                    <div class="edit-badge">📷</div>
+                </div>
+                
+                <div class="profile-name" id="profile-name">Memuat...</div>
+                <div class="profile-username" id="profile-username">@loading</div>
+            </div>
+            
+            <div class="settings-list">
+                <div class="setting-item" onclick="resetPassword()">
+                    <div class="setting-icon">🔐</div> Ganti Password
+                </div>
+                <div class="setting-item" onclick="logout()" style="color: #ff4757; border-color: rgba(255, 71, 87, 0.2); background: rgba(255, 71, 87, 0.05);">
+                    <div class="setting-icon" style="background: rgba(255, 71, 87, 0.2);">🚪</div> Keluar Akun
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <a href="index.html" class="nav-item">💬<span class="nav-label">Chat</span></a>
+            <a href="lagu.html" class="nav-item">🎵<span class="nav-label">Music</span></a>
+            <a href="akun.html" class="nav-item active">⚙️<span class="nav-label">Profile</span></a>
+        </div>
+    </div>
+
+    <script>
+        const IMGBB_API_KEY = "19ff490d9eba953f1485dc32685aed94"; 
+        const firebaseConfig = {
+            apiKey: "AIzaSyDg5QXVD0IBU7g85vxvse6LS_2mjt5wwxY",
+            authDomain: "chatt-apkproject.firebaseapp.com",
+            projectId: "chatt-apkproject",
+            storageBucket: "chatt-apkproject.firebasestorage.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(); const db = firebase.firestore();
+
+        auth.onAuthStateChanged(async user => {
+            if (!user) return window.location.replace('login.html');
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (doc.exists) {
+                const data = doc.data();
+                document.getElementById('profile-name').innerText = data.username;
+                document.getElementById('profile-username').innerText = "@" + data.username;
+                
+                const avatar = document.getElementById('profile-letter');
+                if(data.photoURL) {
+                    avatar.style.backgroundImage = `url('${data.photoURL}')`;
+                    avatar.innerText = "";
+                } else {
+                    avatar.innerText = data.username.charAt(0).toUpperCase();
+                }
+            }
+        });
+
+        async function uploadProfilePic(e) {
+            const file = e.target.files[0]; if(!file) return;
+            
+            document.getElementById('profile-letter').innerText = "⏳";
+            const formData = new FormData(); formData.append("image", file);
+            
+            try {
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+                const json = await res.json();
+                if(json.success) {
+                    const photoURL = json.data.url;
+                    await db.collection('users').doc(auth.currentUser.uid).update({ photoURL: photoURL });
+                    document.getElementById('profile-letter').style.backgroundImage = `url('${photoURL}')`;
+                    document.getElementById('profile-letter').innerText = "";
+                    alert("Foto profil berhasil diganti!");
+                }
+            } catch(err) { alert("Gagal mengunggah gambar!"); location.reload(); }
+            e.target.value = '';
+        }
+
+        function resetPassword() {
+            const email = auth.currentUser.email;
+            if(!email) return alert("Akun kamu pakai Google Login.");
+            auth.sendPasswordResetEmail(email).then(() => alert("Link ganti password dikirim ke email!")).catch(e => alert("Error: " + e.message));
+        }
+
+        function logout() { auth.signOut().then(() => window.location.replace('login.html')); }
+    </script>
+</body>
+</html>

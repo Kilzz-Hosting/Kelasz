@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Nexus</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        
+        body { 
+            /* Background pemandangan estetik biru/gelap */
+            background: url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-box {
+            /* Efek Kaca (Glassmorphism) */
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 380px;
+            padding: 40px 30px;
+            position: relative;
+        }
+
+        /* Tombol X di pojok kanan atas (Hanya hiasan UI) */
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #1a252f;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .login-box h2 {
+            text-align: center;
+            font-size: 26px;
+            color: #1a252f;
+            font-weight: 700;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #1a252f;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            /* Garis bawah khas desain referensi */
+            border-bottom: 2px solid #1a252f;
+            padding: 5px 0;
+            font-size: 15px;
+            color: #1a252f;
+            outline: none;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus {
+            border-bottom-color: #00f2fe;
+        }
+
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #1a252f;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        .options label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .options input[type="checkbox"] { accent-color: #1a252f; cursor: pointer; }
+        
+        .options a { color: #1a252f; text-decoration: none; transition: 0.2s; }
+        .options a:hover { text-decoration: underline; color: #00f2fe; }
+
+        .btn-submit {
+            width: 100%;
+            background: #1a252f;
+            color: #ffffff;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .btn-submit:hover { background: #2c3e50; transform: translateY(-2px); }
+        .btn-submit:active { transform: translateY(1px); }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #1a252f;
+            font-weight: 500;
+        }
+
+        .register-link span {
+            color: #1a252f;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .register-link span:hover { text-decoration: underline; }
+
+        /* Tombol Google Tambahan */
+        .btn-google {
+            width: 100%; background: rgba(255,255,255,0.5); color: #1a252f;
+            border: 1px solid #1a252f; padding: 10px; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 15px;
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+            transition: 0.2s;
+        }
+        .btn-google:hover { background: rgba(255,255,255,0.8); }
+
+        #status-msg { text-align: center; font-size: 12px; color: #d63031; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <div class="close-btn">✖</div>
+        
+        <h2 id="form-title">Login</h2>
+        
+        <div class="input-group">
+            <label>Username / Email</label>
+            <input type="text" id="login-id" required>
+        </div>
+        
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" required>
+        </div>
+        
+        <div class="options">
+            <label><input type="checkbox" checked> Remember me</label>
+            <a href="#" onclick="alert('Silahkan masuk ke halaman Akun setelah login untuk mengganti password.')">Forgot Password?</a>
+        </div>
+        
+        <button class="btn-submit" id="main-btn" onclick="handleAuth()">Login</button>
+        
+        <div class="register-link">
+            <p id="toggle-text">Don't have an account? <span onclick="toggleMode()">Register</span></p>
+        </div>
+
+        <button class="btn-google" onclick="loginGoogle()">
+            <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="15">
+            Google
+        </button>
+
+        <div id="status-msg"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDg5QXVD0IBU7g85vxvse6LS_2mjt5wwxY",
+            authDomain: "chatt-apkproject.firebaseapp.com",
+            projectId: "chatt-apkproject",
+            storageBucket: "chatt-apkproject.firebasestorage.app",
+            messagingSenderId: "965260847860",
+            appId: "1:965260847860:web:baed474009326385a78ca1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        let isLoginMode = true;
+
+        function toggleMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('form-title').innerText = isLoginMode ? 'Login' : 'Register';
+            document.getElementById('main-btn').innerText = isLoginMode ? 'Login' : 'Daftar Sekarang';
+            
+            const toggleHTML = isLoginMode 
+                ? `Don't have an account? <span onclick="toggleMode()">Register</span>` 
+                : `Already have an account? <span onclick="toggleMode()">Login</span>`;
+            document.getElementById('toggle-text').innerHTML = toggleHTML;
+        }
+
+        async function handleAuth() {
+            let loginId = document.getElementById('login-id').value.trim();
+            const password = document.getElementById('password').value;
+            const status = document.getElementById('status-msg');
+
+            if(!loginId || !password) return status.innerText = "Data tidak boleh kosong!";
+            status.innerText = "Memproses...";
+
+            // Fitur Email Samaran (Bisa login pakai username)
+            let email = loginId.includes('@') ? loginId : loginId.toLowerCase() + '@cloudchat.user';
+
+            try {
+                if (isLoginMode) {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    window.location.replace('index.html');
+                } else {
+                    await auth.createUserWithEmailAndPassword(email, password);
+                    alert("Berhasil mendaftar! Silakan login.");
+                    toggleMode();
+                    status.innerText = "";
+                }
+            } catch (error) {
+                status.innerText = "Gagal: " + error.message;
+            }
+        }
+
+        function loginGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithRedirect(provider);
+        }
+
+        // Pantau hasil redirect Google
+        auth.getRedirectResult().then((result) => {
+            if (result.user) window.location.replace('index.html');
+        });
+
+        auth.onAuthStateChanged(user => {
+            if (user) window.location.replace('index.html');
+        });
+    </script>
+</body>
+</html>
