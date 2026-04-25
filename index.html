@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus - Premium UI</title>
+    <title>Kelasz - Premium UI</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -100,7 +100,7 @@
 <body>
 
     <div class="app-container">
-        <header><div class="header-title" id="main-header-title">Nexus Chat</div></header>
+        <header><div class="header-title" id="main-header-title">Kelasz Chat</div></header>
 
         <div id="tab-chat" class="panel active">
             <div id="contacts-list"></div>
@@ -111,7 +111,7 @@
             <div class="music-player">
                 <img id="player-cover" class="album-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300" alt="Cover">
                 <div class="song-title" id="player-title">Pilih Lagu</div>
-                <div class="song-artist" id="player-artist">Nexus Playlist</div>
+                <div class="song-artist" id="player-artist">Kelasz Playlist</div>
                 
                 <div class="progress-container">
                     <span id="curr-time">0:00</span>
@@ -153,8 +153,8 @@
         <audio id="audio-player"></audio>
 
         <div class="bottom-nav">
-            <div class="nav-item active" onclick="switchTab('chat', 'Nexus Chat', this)">💬<span class="nav-label">Chat</span></div>
-            <div class="nav-item" onclick="switchTab('music', 'Nexus Music', this)">🎵<span class="nav-label">Music</span></div>
+            <div class="nav-item active" onclick="switchTab('chat', 'Kelasz Chat', this)">💬<span class="nav-label">Chat</span></div>
+            <div class="nav-item" onclick="switchTab('music', 'Kelasz Music', this)">🎵<span class="nav-label">Music</span></div>
             <div class="nav-item" onclick="switchTab('profile', 'Profile', this)">⚙️<span class="nav-label">Profile</span></div>
         </div>
 
@@ -293,7 +293,7 @@
             
             const box = document.getElementById('chat-content');
             // ANIMASI LOADING MUNCUL
-            box.innerHTML = `<div class="loader-container"><div class="spinner"></div>Meretas Data...</div>`;
+            box.innerHTML = `<div class="loader-container"><div class="spinner"></div>Loading...</div>`;
 
             if(chatListener) chatListener();
             chatListener = db.collection('chats').doc(id).collection('messages').orderBy("time", "asc")
