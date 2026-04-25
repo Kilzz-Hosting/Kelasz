@@ -17,7 +17,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         
         body { 
-            background: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat; 
+            background: url('https://ibb.co/fVFFyRyH') center/cover no-repeat; 
             background-color: #0f172a; background-blend-mode: luminosity; 
             height: 100dvh; width: 100vw; overflow: hidden;
             display: flex; justify-content: center; align-items: center; color: var(--text-main); 
@@ -56,7 +56,7 @@
         /* --- STYLES CHAT ROOM --- */
         #chat-room { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(25px); display: flex; flex-direction: column; z-index: 100; transform: translateX(100%); transition: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
         #chat-room.open { transform: translateX(0); }
-        #chat-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: url('https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=1920&auto=format&fit=crop') center/cover; background-blend-mode: overlay; background-color: rgba(0,0,0,0.85); }
+        #chat-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: url('https://ibb.co/fVFFyRyH') center/cover; background-blend-mode: overlay; background-color: rgba(0,0,0,0.85); }
         .bubble { padding: 12px 18px; border-radius: 20px; max-width: 80%; font-size: 14.5px; font-weight: 500; word-wrap: break-word; line-height: 1.4; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .my-msg { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #000; align-self: flex-end; border-bottom-right-radius: 4px; }
         .their-msg { background: rgba(255,255,255,0.1); color: var(--white); border: 1px solid rgba(255,255,255,0.05); align-self: flex-start; border-bottom-left-radius: 4px; backdrop-filter: blur(10px); }
@@ -214,24 +214,48 @@
         }
 
         // AUTH & LOAD DATA
+                // AUTH & LOAD DATA (FIX BUG AKUN BARU)
         auth.onAuthStateChanged(async user => {
             if (!user) return window.location.href = 'login.html';
-            const doc = await db.collection('users').doc(user.uid).get();
-            if (doc.exists) { 
-                myData = doc.data(); 
-                loadInbox(); 
+            
+            let docRef = db.collection('users').doc(user.uid);
+            let doc = await docRef.get();
+
+            // PENYELAMAT: Kalau akun baru dan datanya belum ada di Database, buat otomatis!
+            if (!doc.exists) {
+                // Ambil nama dari email (Contoh: dimas@cloudchat.user -> dimas)
+                const rawName = user.email ? user.email.split('@')[0] : 'user' + Math.floor(Math.random() * 1000);
                 
-                // Set Profile UI
-                document.getElementById('profile-name').innerText = myData.username;
-                document.getElementById('profile-username').innerText = "@" + myData.username;
-                if(myData.photoURL) {
-                    document.getElementById('profile-letter').style.backgroundImage = `url('${myData.photoURL}')`;
-                    document.getElementById('profile-letter').innerText = "";
-                } else {
-                    document.getElementById('profile-letter').innerText = myData.username.charAt(0).toUpperCase();
-                }
+                // Pastikan huruf kecil semua biar gampang dicari & gak error
+                const cleanName = rawName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+                await docRef.set({
+                    uid: user.uid,
+                    username: cleanName
+                });
+                
+                // Ambil ulang datanya setelah dibuat
+                doc = await docRef.get();
+            }
+
+            // Setelah dipastikan ada, baru load datanya
+            myData = doc.data(); 
+            loadInbox(); 
+            
+            // Tampilkan Data ke Layar Profile
+            document.getElementById('profile-name').innerText = myData.username;
+            document.getElementById('profile-username').innerText = "@" + myData.username;
+            
+            const profileLetter = document.getElementById('profile-letter');
+            if(myData.photoURL) {
+                profileLetter.style.backgroundImage = `url('${myData.photoURL}')`;
+                profileLetter.innerText = "";
+            } else {
+                profileLetter.style.backgroundImage = "none";
+                profileLetter.innerText = myData.username.charAt(0).toUpperCase();
             }
         });
+
 
         // 1. SISTEM CHAT
         function loadInbox() {
